@@ -14,7 +14,7 @@ var post_data = querystring.stringify({
   'username' : config['mine-user'],
   'password': config['mine-pass'],
   'redirect': '/demo',
-  'remember': 'true'
+  'remember': 'false'
 });
 
 var login_options = {
@@ -59,7 +59,6 @@ function update(state) {
         if (res.statusCode == 302 && res.headers['location'].indexOf('/demo') >= 0) {
           var cookie = "";
           var tmp = res.headers['set-cookie'];
-          var space = false;
           for (var i = 0; i < tmp.length; i++) {
             cookie += tmp[i] + ";";
           }
@@ -73,6 +72,7 @@ function update(state) {
     post_req.write(post_data);
     post_req.end();
   } else {
+    console.log(demo_options.headers['Cookie']);
     http.request(demo_options, function(res) {
       res.setEncoding('utf8');
       var str = '';
@@ -80,6 +80,12 @@ function update(state) {
         str += chunk;
       });
       res.on('end', function() {
+        var cookie = "";
+        var tmp = res.headers['set-cookie'];
+        for (var i = 0; i < tmp.length; i++) {
+          cookie += tmp[i] + ";";
+        }
+        console.log('response: ' + cookie);
         var index = str.indexOf('latestVersion" value="');
         if (index < 0) {
           if (state != 2) update(1);
