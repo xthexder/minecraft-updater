@@ -50,7 +50,6 @@ var version = "0";
 update();
 
 setInterval(update, 600000); // Every 10 minutes
-setInterval(test, 5000);
 
 function update(state) {
   if (state == 1) {
@@ -95,11 +94,6 @@ function update(state) {
       });
     }).end();
   }
-}
-
-function test() {
-  http.get("http://myc.xthexder.info/test", function(res) {
-  }).end();
 }
 
 function sendUpdate() {
