@@ -1,0 +1,18 @@
+{
+  "name": "minecraft-updater",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "start": "node minecraft-updater"
+  },
+
+  "dependencies": {
+    "hashish": "*"
+  },
+
+  "engines": {
+    "node": "0.8.x",
+    "npm": "1.1.49"
+  }
+}
+
