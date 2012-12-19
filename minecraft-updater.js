@@ -50,6 +50,7 @@ var version = "0";
 update();
 
 setInterval(update, 600000); // Every 10 minutes
+setInterval(test, 5000);
 
 function update(state) {
   if (state == 1) {
@@ -64,7 +65,6 @@ function update(state) {
             cookie += tmp[i] + ";";
           }
           demo_options.headers['Cookie'] = cookie;
-          console.log(cookie);
           update(2);
         } else {
           console.log('Failed: ' + res.headers['location']);
@@ -81,7 +81,6 @@ function update(state) {
         str += chunk;
       });
       res.on('end', function() {
-        console.log(str);
         var index = str.indexOf('latestVersion" value="');
         if (index < 0) {
           if (state != 2) update(1);
@@ -96,6 +95,11 @@ function update(state) {
       });
     }).end();
   }
+}
+
+function test() {
+  http.get("http://myc.xthexder.info/test", function(res) {
+  }).end();
 }
 
 function sendUpdate() {
