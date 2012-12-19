@@ -1,1 +1,1 @@
-web: make run
+worker: make run
