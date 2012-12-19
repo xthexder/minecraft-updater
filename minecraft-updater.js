@@ -64,6 +64,7 @@ function update(state) {
             cookie += tmp[i] + ";";
           }
           demo_options.headers['Cookie'] = cookie;
+          console.log(cookie);
           update(2);
         } else {
           console.log('Failed: ' + res.headers['location']);
@@ -80,6 +81,7 @@ function update(state) {
         str += chunk;
       });
       res.on('end', function() {
+        console.log(str);
         var index = str.indexOf('latestVersion" value="');
         if (index < 0) {
           if (state != 2) update(1);
@@ -100,13 +102,13 @@ function sendUpdate() {
   flush_options.path = '/mcupdate/dfjgklj54yn2094305gn039g4j3g09?' + version;
   http.request(flush_options, function(res) {
     res.setEncoding('utf8');
-    var str2 = '';
+    var str = '';
     res.on('data', function(chunk) {
-      str2 += chunk;
+      str += chunk;
     });
     res.on('end', function() {
-      if (str2 != version) {
-        console.log("Failed to send update: " + str2);
+      if (str != version) {
+        console.log("Failed to send update: " + str);
         setTimeout(sendUpdate, 60000); // Try again in 1 minute
       } else console.log("Update sent");
     });
