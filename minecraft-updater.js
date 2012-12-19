@@ -13,6 +13,7 @@ var config = require('hashish').merge(process.env, configFile);
 var post_data = querystring.stringify({
   'username' : config['mine-user'],
   'password': config['mine-pass'],
+  'redirect': '/demo',
   'remember': 'true'
 });
 
@@ -55,19 +56,17 @@ function update(state) {
     console.log("Logging in");
 
     var post_req = http.request(login_options, function(res) {
-        if (res.statusCode == 302 && res.headers['location'].indexOf('/login') < 0) {
+        if (res.statusCode == 302 && res.headers['location'].indexOf('/demo') >= 0) {
           var cookie = "";
           var tmp = res.headers['set-cookie'];
           var space = false;
           for (var i = 0; i < tmp.length; i++) {
-            if (tmp[i].indexOf('PLAY_SESSION') == 0 || tmp[i].indexOf('rememberme') == 0) {
-              cookie += tmp[i] + ";";
-            }
+            cookie += tmp[i] + ";";
           }
           demo_options.headers['Cookie'] = cookie;
           update(2);
         } else {
-          console.log("Failed");
+          console.log('Failed: ' + res.headers['location']);
         }
     });
 
