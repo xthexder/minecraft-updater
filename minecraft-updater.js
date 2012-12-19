@@ -50,10 +50,10 @@ update();
 
 setInterval(update, 600000); // Every 10 minutes
 
-function update(stuff) {
-  if (stuff) console.log("Logging in");
+function update(state) {
+  if (state == 1) {
+    console.log("Logging in");
 
-  if (stuff) {
     var post_req = http.request(login_options, function(res) {
         if (res.statusCode == 302 && res.headers['location'].indexOf('/login') < 0) {
           var cookie = "";
@@ -65,7 +65,7 @@ function update(stuff) {
             }
           }
           demo_options.headers['Cookie'] = cookie;
-          update();
+          update(2);
         } else {
           console.log("Failed");
         }
@@ -83,7 +83,7 @@ function update(stuff) {
       res.on('end', function() {
         var index = str.indexOf('latestVersion" value="');
         if (index < 0) {
-          update(true);
+          if (state != 2) update(1);
         } else {
           var nversion = str.substr(index + 22, str.indexOf('"', index + 22) - index - 22);
           if (version != nversion) {
