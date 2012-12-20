@@ -11,11 +11,17 @@ if (fs.existsSync(__dirname + '/config.json')) {
 var config = require('hashish').merge(process.env, configFile);
 
 var post_data = querystring.stringify({
-  'username' : config['mine-user'],
+  'username': config['mine-user'],
   'password': config['mine-pass'],
   'redirect': '/demo',
   'remember': 'false'
 });
+
+var post2_data = {
+  'authenticityToken': '',
+  'questionId': '',
+  'answer': config['mine-answer']
+};
 
 var login_options = {
   host: 'minecraft.net',
@@ -25,6 +31,28 @@ var login_options = {
   headers: {
     'Content-Type': 'application/x-www-form-urlencoded',
     'Content-Length': post_data.length
+  }
+};
+
+var challenge_post_options = {
+  host: 'minecraft.net',
+  port: '80',
+  path: '/challenge',
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/x-www-form-urlencoded',
+    'Content-Length': '',
+    'Cookie': ''
+  }
+};
+
+var challenge_options = {
+  host: 'minecraft.net',
+  port: '80',
+  path: '/challenge',
+  method: 'GET',
+  headers: {
+    'Cookie': ''
   }
 };
 
@@ -47,53 +75,98 @@ var flush_options = {
 
 var version = "0";
 
-update();
+updateVersion();
 
-setInterval(update, 600000); // Every 10 minutes
+setInterval(updateVersion, 600000); // Every 10 minutes
 
-function update(state) {
+function doQuestion() {
+  console.log("[Updater] Answering challenge question");
+  challenge_options.headers['Cookie'] = demo_options.headers['Cookie'];
+  http.request(challenge_options, function(res) {
+    var tmp = res.headers['set-cookie'];
+    for (var i = 0; i < tmp.length; i++) {
+      if (tmp[i].indexOf('PLAY_SESSION') == 0) {
+        challenge_post_options.headers['Cookie'] = demo_options.headers['Cookie'] = tmp[i] + ";";
+        break;
+      }
+    }
+    res.setEncoding('utf8');
+    var str = '';
+    res.on('data', function(chunk) {
+      str += chunk;
+    });
+    res.on('end', function() {
+      var index = str.indexOf('authenticityToken" value="');
+      var index2 = str.indexOf('questionId" value="');
+      var authenticityToken = str.substr(index + 26, str.indexOf('"', index + 26) - index - 26);
+      var questionId = str.substr(index2 + 19, str.indexOf('"', index2 + 19) - index2 - 19);
+      post2_data['authenticityToken'] = authenticityToken;
+      post2_data['questionId'] = questionId;
+      var data = querystring.stringify(post2_data);
+      challenge_post_options.headers['Content-Length'] = data.length;
+
+      var post_req = http.request(challenge_post_options, function(res) {
+        res.setEncoding('utf8');
+        var str = '';
+        res.on('data', function(chunk) {
+          str += chunk;
+        });
+        res.on('end', function() {
+          if (str.indexOf('passed') >= 0) {
+            updateVersion();
+          } else {
+            console.log("[Updater] Failed to answer security question: " + str);
+          }
+        });
+      });
+
+      post_req.write(data);
+      post_req.end();
+    });
+  }).end();
+}
+
+function updateVersion(state) {
   if (state == 1) {
-    console.log("Logging in");
+    console.log("[Updater] Logging in: " + config['mine-user']);
 
     var post_req = http.request(login_options, function(res) {
         if (res.statusCode == 302 && res.headers['location'].indexOf('/demo') >= 0) {
-          var cookie = "";
           var tmp = res.headers['set-cookie'];
           for (var i = 0; i < tmp.length; i++) {
-            cookie += tmp[i] + ";";
+            if (tmp[i].indexOf('PLAY_SESSION') == 0) {
+              demo_options.headers['Cookie'] = tmp[i] + ";";
+              break;
+            }
           }
-          demo_options.headers['Cookie'] = cookie;
-          update(2);
+          updateVersion(2);
         } else {
-          console.log('Failed: ' + res.headers['location']);
+          console.log('[Updater] Failed: ' + res.headers['location']);
         }
     });
 
     post_req.write(post_data);
     post_req.end();
   } else {
-    console.log(demo_options.headers['Cookie']);
     http.request(demo_options, function(res) {
+      if (res.statusCode == 302 && res.headers['location'].indexOf('/challenge') >= 0) {
+        doQuestion();
+        return;
+      }
       res.setEncoding('utf8');
       var str = '';
       res.on('data', function(chunk) {
         str += chunk;
       });
       res.on('end', function() {
-        var cookie = "";
-        var tmp = res.headers['set-cookie'];
-        for (var i = 0; i < tmp.length; i++) {
-          cookie += tmp[i] + ";";
-        }
-        console.log('response: ' + cookie);
         var index = str.indexOf('latestVersion" value="');
         if (index < 0) {
-          if (state != 2) update(1);
+          if (state != 2) updateVersion(1);
         } else {
           var nversion = str.substr(index + 22, str.indexOf('"', index + 22) - index - 22);
           if (version != nversion) {
             version = nversion;
-            console.log('Update: ' + nversion);
+            console.log('[Updater] Update: ' + nversion);
             sendUpdate();
           }
         }
