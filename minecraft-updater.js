@@ -10,6 +10,8 @@ if (fs.existsSync(__dirname + '/config.json')) {
 
 var config = require('hashish').merge(process.env, configFile);
 
+var api_key = config['api-key'];
+
 var post_data = querystring.stringify({
   'username': config['mine-user'],
   'password': config['mine-pass'],
@@ -176,7 +178,7 @@ function updateVersion(state) {
 }
 
 function sendUpdate() {
-  flush_options.path = '/mcupdate/dfjgklj54yn2094305gn039g4j3g09?' + version;
+  flush_options.path = '/mcupdate/' + api_key + '?' + version;
   http.request(flush_options, function(res) {
     res.setEncoding('utf8');
     var str = '';
