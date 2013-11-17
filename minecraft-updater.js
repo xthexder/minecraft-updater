@@ -1,4 +1,5 @@
-var http = require('http')
+var https = require('https')
+  , http = require('http')
   , querystring = require('querystring')
   , fs = require('fs');
 
@@ -15,7 +16,7 @@ var api_key = config['api-key'];
 var post_data = querystring.stringify({
   'username': config['mine-user'],
   'password': config['mine-pass'],
-  'redirect': '/demo',
+  'redirect': 'https://minecraft.net/demo',
   'remember': 'false'
 });
 
@@ -27,18 +28,18 @@ var post2_data = {
 
 var login_options = {
   host: 'minecraft.net',
-  port: '80',
+  port: '443',
   path: '/login',
   method: 'POST',
   headers: {
     'Content-Type': 'application/x-www-form-urlencoded',
-    'Content-Length': post_data.length
+    'Content-Length': Buffer.byteLength(post_data)
   }
 };
 
 var challenge_post_options = {
   host: 'minecraft.net',
-  port: '80',
+  port: '443',
   path: '/challenge',
   method: 'POST',
   headers: {
@@ -50,7 +51,7 @@ var challenge_post_options = {
 
 var challenge_options = {
   host: 'minecraft.net',
-  port: '80',
+  port: '443',
   path: '/challenge',
   method: 'GET',
   headers: {
@@ -60,7 +61,7 @@ var challenge_options = {
 
 var demo_options = {
   host: 'minecraft.net',
-  port: '80',
+  port: '443',
   path: '/demo',
   method: 'GET',
   headers: {
@@ -84,7 +85,7 @@ setInterval(updateVersion, 600000); // Every 10 minutes
 function doQuestion() {
   console.log("[Updater] Answering challenge question");
   challenge_options.headers['Cookie'] = demo_options.headers['Cookie'];
-  http.request(challenge_options, function(res) {
+  https.request(challenge_options, function(res) {
     var tmp = res.headers['set-cookie'];
     for (var i = 0; i < tmp.length; i++) {
       if (tmp[i].indexOf('PLAY_SESSION') == 0) {
@@ -105,9 +106,9 @@ function doQuestion() {
       post2_data['authenticityToken'] = authenticityToken;
       post2_data['questionId'] = questionId;
       var data = querystring.stringify(post2_data);
-      challenge_post_options.headers['Content-Length'] = data.length;
+      challenge_post_options.headers['Content-Length'] = Buffer.byteLength(data);
 
-      var post_req = http.request(challenge_post_options, function(res) {
+      var post_req = https.request(challenge_post_options, function(res) {
         res.setEncoding('utf8');
         var str = '';
         res.on('data', function(chunk) {
@@ -132,7 +133,7 @@ function updateVersion(state) {
   if (state == 1) {
     console.log("[Updater] Logging in: " + config['mine-user']);
 
-    var post_req = http.request(login_options, function(res) {
+    var post_req = https.request(login_options, function(res) {
         if (res.statusCode == 302 && res.headers['location'].indexOf('/demo') >= 0) {
           var tmp = res.headers['set-cookie'];
           for (var i = 0; i < tmp.length; i++) {
@@ -150,7 +151,7 @@ function updateVersion(state) {
     post_req.write(post_data);
     post_req.end();
   } else {
-    http.request(demo_options, function(res) {
+    https.request(demo_options, function(res) {
       if (res.statusCode == 302 && res.headers['location'].indexOf('/challenge') >= 0) {
         doQuestion();
         return;
